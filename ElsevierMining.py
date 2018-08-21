@@ -177,6 +177,9 @@ def run_routine(query, number=5000):
     return df
 
 if __name__ == '__main__':
+    '''
+    Using the module as the function, returns a tsv file
+    '''
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-q", help="query to search for", type=str)
