@@ -14,7 +14,8 @@ API = os.environ['ELSKEY']
 
 class Article(object):
     '''
-    Class for working with a single article
+    Class for working with a single article. 
+    Requires the API link to work, usually fetched throug get_urls function
     '''
     
     def __init__(self, link):
@@ -22,6 +23,7 @@ class Article(object):
         Creates most vatiables to work with
         '''
         self.link = link
+        self.headers = {'X-ELS-APIKey' : API}
         self.headers_plain = {'X-ELS-APIKey' : API, 'Accept': 'text/plain'}
         self.headers_xml = {'X-ELS-APIKey' : API, 'Accept': 'text/xml'}
         self.xml = requests.get(link, headers=self.headers_xml).text
@@ -74,6 +76,16 @@ class Article(object):
             self.title = np.nan
             return np.nan
     
+    def get_cited_by(self):
+        '''
+        Gets number of citations. Requires the self.scopus variable, self.get_scopus needs to be run first
+        '''
+        try:
+            r = requests.get('http://api.elsevier.com/content/search/scopus?query=SCOPUS-ID(%d)&field=citedby-count' % self.scopus, headers=self.headers)
+            return int(r.json()['search-results']['entry'][0]['citedby-count'])
+        except:
+            return 0
+    
     # def get_abstract(self):
     #     '''
     #     Returns the abstract for the article
@@ -98,7 +110,8 @@ class Article(object):
                         'scopus' : self.get_scopus(),
                         'title' : self.get_title(),
                         'abstract' : clean_text(self.abstract),
-                        'text' : clean_text(self.text)})
+                        'text' : clean_text(self.text),
+                        'citations' : self.get_cited_by()})
         return ret
 
 
@@ -150,7 +163,7 @@ def get_urls(query, number=5001):
 
 def run_routine(query, number=5000):
     '''
-    Run the whole routine for one query
+    Run the whole routine for one query.
     '''
     df = pd.DataFrame(columns=['link', 'scopus', 'title', 'abstract', 'text'])
     n=0
