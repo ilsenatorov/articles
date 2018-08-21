@@ -30,40 +30,38 @@ class Article(object):
         self.soup = BeautifulSoup(self.xml, 'xml')
         if self.soup.find('openaccess').get_text() != '0':
             self.open_access = True
-            self.text = pd.Series(self.soup.find('sections').get_text(strip=True).split())
-            self.abstract = pd.Series(self.soup.find('abstract').get_text(strip=True).split())
         else:
             self.open_access = False
             return
 
 
-    # def get_text(self):
-    #     '''
-    #     Gets the actual text of the article
-    #     '''
-    #     self.text = pd.Series(self.soup.find('sections').get_text(strip=True))
+    def get_text(self):
+        try:
+            self.text = pd.Series(self.soup.find('sections').get_text(strip=True).split())
+            return self.text
+        except:
+            self.text = np.nan
+            return self.text
+    
+    def get_abstract(self):
+        try:
+            self.abstract = pd.Series(self.soup.find('abstract').get_text(strip=True).split())
+            return self.abstract
+        except:
+            self.abstract = np.nan
+            return self.abstract
 
-    # def get_clean_text(self):
-    #     '''
-    #     Returns the text clean
-    #     '''
-    #     ret = pd.Series(self.get_clean_text().split())
-    #     ret = clean_text(ret)
-    #     self.clean_abstract = ' '.join(ret.tolist())
-    #     return self.clean_text
 
     def get_scopus(self):
         '''
         Returns the scopus id for the article
         '''
         try:
-            self.scopus = self.soup.find('scopus-id').get_text(strip=True)
+            self.scopus = int(self.soup.find('scopus-id').get_text(strip=True))
             return self.scopus
         except:
             self.scopus = np.nan
             return np.nan
-
-        
 
     def get_title(self):
         '''
@@ -84,23 +82,7 @@ class Article(object):
             r = requests.get('http://api.elsevier.com/content/search/scopus?query=SCOPUS-ID(%d)&field=citedby-count' % self.scopus, headers=self.headers)
             return int(r.json()['search-results']['entry'][0]['citedby-count'])
         except:
-            return 0
-    
-    # def get_abstract(self):
-    #     '''
-    #     Returns the abstract for the article
-    #     '''
-    #     self.abstract = clean_text(pd.Series(self.soup.find('abstract').get_text(strip=True).tolist()))
-    #     return self.abstract
-    
-    # def get_clean_abstract(self):
-    #     '''
-    #     Returns the abstract clean 
-    #     '''
-    #     ret = pd.Series(self.get_clean_abstract().split())
-    #     ret = clean_text(ret)
-    #     self.clean_abstract = ' '.join(ret.tolist())
-    #     return self.clean_abstract
+            return np.nan
     
     def return_df(self):
         '''
@@ -109,8 +91,8 @@ class Article(object):
         ret = pd.Series({'link' : self.link,
                         'scopus' : self.get_scopus(),
                         'title' : self.get_title(),
-                        'abstract' : clean_text(self.abstract),
-                        'text' : clean_text(self.text),
+                        'abstract' : clean_text(self.get_abstract()),
+                        'text' : clean_text(self.get_text()),
                         'citations' : self.get_cited_by()})
         return ret
 
@@ -165,15 +147,18 @@ def run_routine(query, number=5000):
     '''
     Run the whole routine for one query.
     '''
-    df = pd.DataFrame(columns=['link', 'scopus', 'title', 'abstract', 'text'])
+    df = pd.DataFrame(columns=['link', 'scopus', 'title', 'abstract', 'text', 'citations'])
     n=0
     for link in get_urls(query, number=number):
-        A = Article(link)
-        if A.open_access:
-            df.loc[n] = Article(link).return_df()
-            n+=1
-        else:
-            print('article is not open access, skipping')
+        try:
+            A = Article(link)
+            if A.open_access:
+                df.loc[n] = Article(link).return_df()
+                n+=1
+            else:
+                print('article is not open access, skipping')
+        except:
+            print('Failed to retrieve info')
     return df
 
 if __name__ == '__main__':
