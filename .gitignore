@@ -2,3 +2,4 @@
 !.gitignore
 *.ipynb
 __pycache__
+*.tsv

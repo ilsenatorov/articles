@@ -113,7 +113,7 @@ def remove_digits(ser):
     '''
     Removes the words that contain digits
     '''
-    ser = ser[~ser.str.contains('\d')]
+    ser = ser[~ser.str.contains(r'\d')]
     return ser
 
 def remove_punctuation(ser):
@@ -147,3 +147,26 @@ def get_urls(query, number=5001):
         for url in requests.get(base_link+'&count=200&start='+str(n), headers=headers).json()['search-results']['entry']:
             ret.append(url['prism:url'])
     return ret
+
+def run_routine(query, number=5000):
+    '''
+    Run the whole routine for one query
+    '''
+    df = pd.DataFrame(columns=['link', 'scopus', 'title', 'abstract', 'text'])
+    n=0
+    for link in get_urls(query, number=number):
+        A = Article(link)
+        if A.open_access:
+            df.loc[n] = Article(link).return_df()
+            n+=1
+        else:
+            print('article is not open access, skipping')
+    return df
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-q", help="query to search for", type=str)
+    parser.add_argument("-n", help="number of articles to save", type=int)
+    args = parser.parse_args()
+    run_routine(args.q, number=args.n).to_csv('./%s_%d.tsv' % (args.q, args.n), sep='\t')
