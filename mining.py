@@ -33,9 +33,8 @@ def get_25_citedby(pmids):
             citedby = info['citedby-count']
             title = info['dc:title']
             pubmed = info['pubmed-id']
-            author = info['dc:author']
             with open('citations.tsv', 'a+') as output:
-                output.write('%s\t%s\t%s\t%s\t%s\t%s\n' % (pmid, date, citedby, title, pubmed, author))
+                output.write('%s\t%s\t%s\t%s\t%s\n' % (pmid, date, citedby, title, pubmed))
         except:
             print('Unable to retrieve article with PMID %s' % pmid)
 
