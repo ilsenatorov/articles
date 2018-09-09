@@ -20,18 +20,24 @@ def create_scopus_link(pmids):
     beg = 'http://api.elsevier.com/content/search/scopus?query=PMID(%s)' % pmids[0]
     final = [beg]
     end = '&field=citedby-count'
-    for l in pmids:
+    for l in pmids[1:]:
         final.append('+OR+PMID(%s)' % l)
-    final.append(end)
     return ''.join(final)
 
 def get_25_citedby(pmids):
     link = create_scopus_link(pmids)
     json = requests.get(link, headers={'X-ELS-APIKEY':API}).json()['search-results']['entry']
-    ret = {}
-    for pmid, citedby in zip(pmids,json):
-        ret[pmid] = int(citedby['citedby-count'])
-    return ret
+    for pmid, info in zip(pmids,json):
+        try:
+            date = info['prism:coverDate']
+            citedby = info['citedby-count']
+            title = info['dc:title']
+            pubmed = info['pubmed-id']
+            author = info['dc:author']
+            with open('citations.tsv', 'a+') as output:
+                output.write('%s\t%s\t%s\t%s\t%s\t%s\n' % (pmid, date, citedby, title, pubmed, author))
+        except:
+            print('Unable to retrieve article with PMID %s' % pmid)
 
 if __name__ == '__main__':
     print(get_citedby(sys.argv[1]))
