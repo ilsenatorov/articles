@@ -26,7 +26,11 @@ def create_scopus_link(pmids):
 
 def get_25_citedby(pmids):
     link = create_scopus_link(pmids)
-    json = requests.get(link, headers={'X-ELS-APIKEY':API}).json()['search-results']['entry']
+    try:
+        json = requests.get(link, headers={'X-ELS-APIKEY':API}).json()['search-results']['entry']
+    except:
+        print("Unable to send request")
+        return
     for pmid, info in zip(pmids,json):
         try:
             date = info['prism:coverDate']
