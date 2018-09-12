@@ -7,9 +7,14 @@ import numpy as np
 import requests
 import os
 import sys
+import string
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
 
-API = os.environ['ELSKEY']
-
+try:
+    API = os.environ['ELSKEY']
+except:
+    print("Need to source the API keys!")
 
 def get_citedby(PMID):
     '''
@@ -54,6 +59,35 @@ def get_25_citedby(pmids, output):
         except:
             print('Unable to retrieve article with PMID %s' % pmid)
 
-if __name__ == '__main__':
-    print(get_citedby(sys.argv[1]))
+
+def clean_text(location, new_location):
+    '''
+    Clean a textfile, save a new one
+    '''
+    stop = stopwords.words('english')
+    def remove_stop(word):
+        if word not in stop:
+            return word
+        else:
+            return np.nan
+    stemmer = PorterStemmer()
+    file = open(location, 'r').read()
+    l = file.split('====')
+    body = l[2]
+    body = pd.Series(body.split())
+    body = body.str.lower()
+    body = body[~body.str.contains('www|http|@')]
+    body = body.str.replace('[^\w\s]', '')
+    body = body[~body.str.contains('^\d+$')]
+    body = body.apply(remove_stop).dropna()
+    body = body.apply(stemmer.stem)
+    body.to_csv(new_location, index=False)
+    return body
+
+def clean_all_files_in_dir(inpdir, outdir):
+    for f in os.listdir(inpdir):
+        try:
+            clean_text(inpdir+f, outdir+f)
+        except Exception as e:
+            print(e)
 
